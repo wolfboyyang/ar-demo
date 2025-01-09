@@ -37,6 +37,8 @@ export class BasketballGame extends ARDemo
         super();
 
         this._assetManager = new AssetManager();
+        this._objects = { };
+        this._initialized = false;
         this._eventQueue = new EventQueue();
         this._entities = [];
         this._gui = null;
@@ -58,9 +60,69 @@ export class BasketballGame extends ARDemo
         const imageTracker = AR.Tracker.Image();
         await imageTracker.database.add([
         {
-            name: 'mage',
-            image: document.getElementById('mage')
-        }
+            name: 'rabit',
+            image: document.getElementById('rabit')
+        },
+        {
+            name: 'blue_bike',
+            image: document.getElementById('blue_bike')
+        },
+        {
+            name: 'red_bike',
+            image: document.getElementById('red_bike')
+        },
+        {
+            name: 'green_bike',
+            image: document.getElementById('green_bike')
+        },
+        {
+            name: 'book',
+            image: document.getElementById('book')
+        },
+        {
+            name: 'green_car',
+            image: document.getElementById('green_car')
+        },
+        {
+            name: 'red_car',
+            image: document.getElementById('red_car')
+        },
+        {
+            name: 'motorbike',
+            image: document.getElementById('motorbike')
+        },
+        {
+            name: 'scooter',
+            image: document.getElementById('scooter')
+        },
+        {
+            name: 'tractor',
+            image: document.getElementById('tractor')
+        },
+        {
+            name: 'umbrella',
+            image: document.getElementById('umbrella')
+        },
+        {
+            name: 'bike',
+            image: document.getElementById('bike')
+        },
+        {
+            name: 'travel',
+            image: document.getElementById('travel')
+        },
+        {
+            name: 'beach',
+            image: document.getElementById('beach')
+        },
+        {
+            name: 'paper',
+            image: document.getElementById('paper')
+        },
+        {
+            name: 'calc',
+            image: document.getElementById('calc')
+        },
         ]);
 
         const viewport = AR.Viewport({
@@ -93,7 +155,7 @@ export class BasketballGame extends ARDemo
             if(scan)
                 scan.hidden = true;
 
-            this.broadcast(new GameEvent('targetfound'));
+            this._onTargetFound(event.referenceImage);
         });
 
         imageTracker.addEventListener('targetlost', event => {
@@ -127,11 +189,41 @@ export class BasketballGame extends ARDemo
      */
     init()
     {
+        // Do not automatically play an animation when loading GLTF models
+        BABYLON.SceneLoader.OnPluginActivatedObservable.add(loader => {
+            if(loader.name == 'gltf') {
+                loader.animationStartMode = BABYLON.GLTFLoaderAnimationStartMode.NONE;
+            }
+        });
+
         return Promise.resolve()
         .then(() => this._initPhysics())
         .then(() => this._initGUI())
         .then(() => this._spawnEntities())
+        .then(() => this._initCat())
         .then(() => this._flushEventQueue());
+    
+        
+    }
+
+    async _initCat()
+    {
+        const file = this._assetManager.file('cat.glb');
+        const gltf = await BABYLON.SceneLoader.ImportMeshAsync('', '', file);
+        const cat = gltf.meshes[0];
+        cat.scaling.set(0.7, 0.7, 0.7);
+
+        const anim = gltf.animationGroups.find(anim => anim.name == 'Cheer');
+        if(anim)
+            anim.play(true);
+
+        const ar = this.ar;
+        cat.parent = ar.root;
+
+        this._objects.cat = cat;
+
+        // done!
+        this._initialized = true;
     }
 
     /**
@@ -198,6 +290,40 @@ export class BasketballGame extends ARDemo
         return Promise.resolve()
         .then(() => entity.init())
         .then(() => entity);
+    }
+
+    _onTargetFound(referenceImage)
+    {
+        // make sure that the scene is initialized
+        if(!this._initialized) {
+            alert(`Target \"${referenceImage.name}\" was found, but the 3D scene is not yet initialized!`);
+            return;
+        }
+
+        // change the scene based on the tracked image
+        switch(referenceImage.name) {
+            case 'rabit':
+                this.broadcast(new GameEvent('targetfound'));
+                break;
+
+            case 'blue_bike':
+            case 'red_bike':
+            case 'green_bike':
+            case 'book':
+            case 'green_car':
+            case 'red_car':
+            case 'motorbike':
+            case 'scooter':
+            case 'tractor':
+            case 'umbrella':
+            case 'bike':
+            case 'travel':
+            case 'beach':
+            case 'paper':
+            case 'calc':
+                this._objects.cat.setEnabled(true);
+                break;
+        }
     }
 
     /**

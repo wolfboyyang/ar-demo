@@ -16,6 +16,7 @@ export const ASSET_LIST = Object.freeze([
     // 3D models
     'ball.glb',
     'goal.glb',
+    'cat.glb',
 
     // 2D artwork
     'atlas.png',
